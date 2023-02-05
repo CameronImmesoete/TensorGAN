@@ -12,12 +12,10 @@ import time
 from IPython import display
 
 class Generator():
-    def __init__(self, BUFFER_SIZE=60000, BATCH_SIZE=256):
-        self.BUFFER_SIZE = BUFFER_SIZE
-        self.BATCH_SIZE = BATCH_SIZE
+    def __init__(self):
         self.model = ""
 
-    def make_generator_model():
+    def make_generator_model(self):
         self.model = tf.keras.Sequential()
         self.model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,)))
         self.model.add(layers.BatchNormalization())
@@ -41,7 +39,7 @@ class Generator():
 
         return self.model
 
-    def generator_loss(fake_output):
+    def generator_loss(self, fake_output):
         # This method returns a helper function to compute cross entropy loss
         cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 

@@ -11,11 +11,14 @@ import time
 
 from IPython import display
 
-import Generator
-import Dataset
-import Discriminator
+import generator
+import dataset
+import discriminator
 
 import tensorflow_docs.vis.embed as embed
+
+BUFFER_SIZE=60000
+BATCH_SIZE=256
 
 EPOCHS = 50
 noise_dim = 100
@@ -32,30 +35,30 @@ def saveModel(generator_optimizer, discriminator_optimizer, generator, discrimin
 # Notice the use of `tf.function`
 # This annotation causes the function to be "compiled".
 @tf.function
-def train_step(images):
+def train_step(images, generator, discriminator):
     noise = tf.random.normal([BATCH_SIZE, noise_dim])
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-      generated_images = generator(noise, training=True)
+      generated_images = generator.model(noise, training=True)
 
-      real_output = discriminator(images, training=True)
-      fake_output = discriminator(generated_images, training=True)
+      real_output = discriminator.model(images, training=True)
+      fake_output = discriminator.model(generated_images, training=True)
 
-      gen_loss = generator_loss(fake_output)
-      disc_loss = discriminator_loss(real_output, fake_output)
+      gen_loss = generator.generator_loss(fake_output)
+      disc_loss = discriminator.discriminator_loss(real_output, fake_output)
 
-    gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
-    gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
+    gradients_of_generator = gen_tape.gradient(gen_loss, generator.model.trainable_variables)
+    gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.model.trainable_variables)
 
-    generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
-    discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
+    generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.model.trainable_variables))
+    discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.model.trainable_variables))
 
-def train(dataset, epochs):
+def train(dataset, epochs, generator, discriminator):
     for epoch in range(epochs):
         start = time.time()
 
-        for image_batch in dataset:
-            train_step(image_batch)
+        for image_batch in dataset.train_dataset:
+            train_step(image_batch, generator, discriminator)
 
         # Produce images for the GIF as you go
         display.clear_output(wait=True)
@@ -92,16 +95,19 @@ def make_gif():
         writer.append_data(image)
 
 if __name__ == "__main__":
-    generator = Generator.Generator()
-    generator.Generator.make_generator_model()
+    train_dataset = dataset.Dataset()
+    train_dataset.importExample()
+
+    generator = generator.Generator()
+    generator.make_generator_model()
 
     noise = tf.random.normal([1, 100])
     generated_image = generator.model(noise, training=False)
 
     plt.imshow(generated_image[0, :, :, 0], cmap='gray')
 
-    discriminator = Discriminator.Discriminator()
-    discriminator.Discriminator.make_discriminator_model()
+    discriminator = discriminator.Discriminator()
+    discriminator.make_discriminator_model()
     decision = discriminator.model(generated_image)
     print (decision)
 
@@ -114,7 +120,7 @@ if __name__ == "__main__":
     # to visualize progress in the animated GIF)
     seed = tf.random.normal([num_examples_to_generate, noise_dim])
 
-    train(train_dataset, EPOCHS)
+    train(train_dataset, EPOCHS, generator, discriminator)
 
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
