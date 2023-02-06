@@ -74,7 +74,7 @@ def train(dataset, epochs, generator, discriminator):
 
     # Generate after the final epoch
     display.clear_output(wait=True)
-    generate_and_save_images(generator,
+    generate_and_save_images(generator.model,
                             epochs,
                             seed)
 
