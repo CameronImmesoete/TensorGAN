@@ -3,10 +3,8 @@ import tensorflow as tf
 import glob
 import imageio
 import matplotlib.pyplot as plt
-import numpy as np
 import os
 import PIL
-from tensorflow.keras import layers
 import time
 
 from IPython import display
@@ -24,13 +22,15 @@ EPOCHS = 50
 noise_dim = 100
 num_examples_to_generate = 16
 
+checkpoint_dir = './training_checkpoints'
+checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+
 def saveModel(generator_optimizer, discriminator_optimizer, generator, discriminator):
-    checkpoint_dir = './training_checkpoints'
-    checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
     checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                  discriminator_optimizer=discriminator_optimizer,
                                  generator=generator,
                                  discriminator=discriminator)
+    return checkpoint
 
 # Notice the use of `tf.function`
 # This annotation causes the function to be "compiled".
@@ -62,7 +62,7 @@ def train(dataset, epochs, generator, discriminator):
 
         # Produce images for the GIF as you go
         display.clear_output(wait=True)
-        generate_and_save_images(generator,
+        generate_and_save_images(generator.model,
                                 epoch + 1,
                                 seed)
 
@@ -77,6 +77,21 @@ def train(dataset, epochs, generator, discriminator):
     generate_and_save_images(generator,
                             epochs,
                             seed)
+
+def generate_and_save_images(model, epoch, test_input):
+    # Notice `training` is set to False.
+    # This is so all layers run in inference mode (batchnorm).
+    predictions = model(test_input, training=False)
+
+    fig = plt.figure(figsize=(4, 4))
+
+    for i in range(predictions.shape[0]):
+        plt.subplot(4, 4, i+1)
+        plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
+        plt.axis('off')
+
+    plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
+    #plt.show()
 
 # Display a single image using the epoch number
 def display_image(epoch_no):
@@ -93,6 +108,8 @@ def make_gif():
             writer.append_data(image)
         image = imageio.imread(filename)
         writer.append_data(image)
+    
+    return anim_file
 
 if __name__ == "__main__":
     train_dataset = dataset.Dataset()
@@ -114,7 +131,7 @@ if __name__ == "__main__":
     generator_optimizer = tf.keras.optimizers.Adam(1e-4)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
-    saveModel(generator_optimizer, discriminator_optimizer, generator.model, discriminator.model)
+    checkpoint = saveModel(generator_optimizer, discriminator_optimizer, generator.model, discriminator.model)
 
     # You will reuse this seed overtime (so it's easier)
     # to visualize progress in the animated GIF)
@@ -126,6 +143,6 @@ if __name__ == "__main__":
 
     display_image(EPOCHS)
 
-    make_gif()
+    anim_file = make_gif()
 
     embed.embed_file(anim_file)
