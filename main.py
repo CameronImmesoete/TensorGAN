@@ -1,19 +1,17 @@
-import tensorflow as tf
-
 import glob
-import imageio
-import matplotlib.pyplot as plt
 import os
-import PIL
 import time
 
+import imageio
+import matplotlib.pyplot as plt
+import PIL
+import tensorflow as tf
 from IPython import display
+from tensorflow_docs.vis import embed
 
-import generator
 import dataset
 import discriminator
-
-import tensorflow_docs.vis.embed as embed
+import generator
 
 BUFFER_SIZE=60000
 BATCH_SIZE=256
@@ -70,7 +68,7 @@ def train(dataset, epochs, generator, discriminator):
         if (epoch + 1) % 15 == 0:
             checkpoint.save(file_prefix = checkpoint_prefix)
 
-        print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
+        print (f'Time for epoch {epoch + 1} is {time.time()-start} sec')
 
     # Generate after the final epoch
     display.clear_output(wait=True)
@@ -90,12 +88,12 @@ def generate_and_save_images(model, epoch, test_input):
         plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
         plt.axis('off')
 
-    plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
+    plt.savefig(f'image_at_epoch_{epoch:04d}.png')
     #plt.show()
 
 # Display a single image using the epoch number
 def display_image(epoch_no):
-    return PIL.Image.open('image_at_epoch_{:04d}.png'.format(epoch_no))
+    return PIL.Image.open(f'image_at_epoch_{epoch_no:04d}.png')
 
 def make_gif():
     anim_file = 'dcgan.gif'
