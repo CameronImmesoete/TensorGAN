@@ -1,8 +1,8 @@
 import tensorflow as tf
-
 from tensorflow.keras import layers
 
-class Generator():
+
+class Generator:
     def __init__(self):
         self.model = ""
 
